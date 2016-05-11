@@ -8,6 +8,7 @@
 # 12/27/15
 #
 
+from Tkinter import *
 import Tkinter as tk
 import tkFont
 import sys
@@ -32,8 +33,8 @@ class Application(tk.Frame):
         # Display variables
         self.bgColor1 = "#AEE1FC"
         self.bgColor2 = "#BAFCAE"
-        self.titlefont = tkFont.Font(family='Helvetica', size=48, weight='bold')
-        self.buttonfont = tkFont.Font(family='Helvetica', size=36)
+        self.titlefont = tkFont.Font(family='BlairMdITC TT', size=64, weight='bold')
+        self.buttonfont = tkFont.Font(family='Avalon', size=30)
 
         # Initialize game variables
         self.grid_size = grid_size
@@ -52,31 +53,48 @@ class Application(tk.Frame):
         self.title_screen = tk.Canvas(self, width = self.WIDTH,
                                             height = self.HEIGHT,
                                             background = self.bgColor1)
-        self.title = tk.Label(self, text="THE DOT GAME",
+        self.title = tk.Label(self, text = "PIG PEN",
                                     font = self.titlefont,
-                                    bg=self.bgColor1)
+                                    pady = 10,
+                                    bg = self.bgColor1)
 
-        # Buttons
-        self.modeButton1 = tk.Button(self,  text = 'vs. player',
+        img = tk.PhotoImage(file = 'pig.gif')
+        self.pig = tk.Label(self, image = img, borderwidth = 0)
+        self.pig.img = img
+
+        # Custom buttons
+        self.modeButton1 = tk.Label(self,   text = "vs. player",
                                             font = self.buttonfont,
-                                            command = self.set_up_player_mode)
-        self.modeButton2 = tk.Button(self,  text = 'vs. computer',
+                                            bg = self.bgColor2,
+                                            padx = 10,
+                                            pady = 10,
+                                            relief = GROOVE)
+        self.modeButton2 = tk.Label(self,   text = "vs. computer",
                                             font = self.buttonfont,
-                                            command = self.set_up_player_mode)
-        self.quitButton = tk.Button(self,   text = 'Quit', command = self.quit)
+                                            bg = self.bgColor2,
+                                            padx = 10,
+                                            pady = 10,
+                                            relief = RIDGE)
+        self.modeButton1.bind('<Button-1>', self.set_up_player_mode)
+        self.modeButton2.bind('<Button-1>', self.set_up_player_mode)
+
+
+        self.quitButton = tk.Button(self, text = 'Quit', bg = self.bgColor1, command = self.quit)
 
         # Draw the screen
-        self.title_screen.grid(rowspan=4)
+        self.title_screen.grid(rowspan=5)
         self.title.grid(column=0, row=0)
-        self.modeButton1.grid(row=1)
-        self.modeButton2.grid(row=2)
-        self.quitButton.grid()
+        self.pig.grid(row=1)
+        self.modeButton1.grid(row=2)
+        self.modeButton2.grid(row=3)
+        self.quitButton.grid(row = 4)
 
-    def set_up_player_mode(self):
+    def set_up_player_mode(self, event):
         self.modeButton1.destroy()
         self.modeButton2.destroy()
         self.title.destroy()
         self.get_player_name()
+        self.pig.destroy()
 
     def get_player_name(self):
         # Entry boxes for users to enter names
@@ -92,16 +110,16 @@ class Application(tk.Frame):
         entry_box2.grid(row = 3)
 
         # Needs to be defined after variable declaration.
-        def entry_handler():
+        def entry_handler(event = 0):
             self.set_up_game(entry_box.get(), entry_box2.get())
             l.destroy()
             l2.destroy()
             entry_box.destroy()
             entry_box2.destroy()
-        entry_box.bind('<Return>', entry_handler)
 
         # New screen - Update how the display looks
         self.quitButton.configure(text = 'Done', command = entry_handler)
+        self.quitButton.bind('<Return>', entry_handler)
         self.title_screen.configure(bg = self.bgColor2)
 
     def set_up_game(self, player1name, player2name):
