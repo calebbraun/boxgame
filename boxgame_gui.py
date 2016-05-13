@@ -14,6 +14,7 @@ import tkFont
 import sys
 import string
 import random
+from boxgame_player import Player
 
 
 # The graphical interface
@@ -38,17 +39,12 @@ class Application(tk.Frame):
 
         # Initialize game variables
         self.grid_size = grid_size
-        self.player1score = 0
-        self.player2score = 0
-        self.player1name = ""
-        self.player2name = ""
         self.boxes_left = (grid_size-1)**2
-        self.is_player1_turn = False
 
         # Start the game
-        self.get_game_mode()
+        self.show_title_screen()
 
-    def get_game_mode(self):
+    def show_title_screen(self):
         # Title and background
         self.title_screen = tk.Canvas(self, width = self.WIDTH,
                                             height = self.HEIGHT,
@@ -93,8 +89,8 @@ class Application(tk.Frame):
         self.modeButton1.destroy()
         self.modeButton2.destroy()
         self.title.destroy()
-        self.get_player_name()
         self.pig.destroy()
+        self.get_player_name()
 
     def get_player_name(self):
         # Entry boxes for users to enter names
@@ -122,18 +118,36 @@ class Application(tk.Frame):
         self.quitButton.bind('<Return>', entry_handler)
         self.title_screen.configure(bg = self.bgColor2)
 
+
     def set_up_game(self, player1name, player2name):
-        self.player1name = player1name
-        self.player2name = player2name
+        self.player1 = Player(player1name, "HUMAN")
+        self.player2 = Player(player2name, "HUMAN")
         self.quitButton.configure(text='Quit', command=self.quit)
         self.title_screen.destroy()
+        self.init_display()
         self.fill_board()
 
-    def fill_board(self):
+
+    def init_display(self):
+        font = tkFont.Font(family='Helvetica', size=16, weight='bold')
         # Set up the canvas
         self.board = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT)
         self.board.grid()
 
+        self.display_message = self.board.create_text(  self.WIDTH / 2,
+                                                        self.HEIGHT - 25,
+                                                        text = "It is " + self.player1.name + "'s turn!",
+                                                        font = font)
+        self.score1 = self.board.create_text(100, 25,
+                                            text = "%s: 0" %(self.player1.name),
+                                            font = font)
+        self.score2 = self.board.create_text(self.WIDTH - 100, 25,
+                                                    text = "%s: 0" %(self.player2.name),
+                                                    font = font)
+
+
+    # Popluates the board with dots and lines
+    def fill_board(self):
         # Constant dot variables
         dot_spacing = self.WIDTH / self.grid_size
         margin = dot_spacing / 2
@@ -141,12 +155,6 @@ class Application(tk.Frame):
             dot_size = 10 - self.grid_size
         else:
             dot_size = 2
-
-        # Set up the display/error message
-        font = tkFont.Font(family='Helvetica', size=16, weight='bold')
-        self.display_message = self.board.create_text(self.WIDTH / 2, self.HEIGHT-25, text="It is "+self.player1name+"'s turn!", font = font)
-        self.score1 = self.board.create_text(100, 25, text="%s:  %d" %(self.player1name, self.player1score), font=font)
-        self.score2 = self.board.create_text(self.WIDTH-100, 25, text="%s: %d" %(self.player2name, self.player2score), font=font)
 
         for i in range(0, self.grid_size):
             for j in range(0, self.grid_size):
@@ -197,7 +205,6 @@ class Application(tk.Frame):
 
 
     def hlineClick(self, event, lineID=0):
-        print lineID
         selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
 
         # Add the boxes that are adjacent to the line to our 'lines' dictionary.
@@ -222,9 +229,8 @@ class Application(tk.Frame):
         else:
             self.refresh_display("It is %s's turn!" %(self.player2name))
 
-
+    # Combine with method above
     def lineClick(self, event, lineID=0):
-        print lineID
         selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
 
         adjacent_boxes = self.lines[lineID]
@@ -241,9 +247,9 @@ class Application(tk.Frame):
             self.boxes[adjacent_boxes[1][0]][adjacent_boxes[1][1]] += 4
 
         if self.is_player1_turn:
-            self.refresh_display("It is %s's turn!" %(self.player1name))
+            self.refresh_display("It is %s's turn!" %(self.player1.name))
         else:
-            self.refresh_display("It is %s's turn!" %(self.player2name))
+            self.refresh_display("It is %s's turn!" %(self.player2.name))
 
     def refresh_display(self, error):
         self.board.itemconfig(self.display_message, text=error)
@@ -280,9 +286,9 @@ class Application(tk.Frame):
         # Check for game over
         if self.boxes_left == 0:
             if self.player1score < self.player2score:
-                winning_message = self.player1name + " Wins!"
-            elif self.player1score > self.player2score:
                 winning_message = self.player2name + " Wins!"
+            elif self.player1score > self.player2score:
+                winning_message = self.player1name + " Wins!"
             else:
                 winning_message = "It's a tie!"
             font = tkFont.Font(family='Helvetica', size=48, weight='bold')
