@@ -169,7 +169,7 @@ class Application(tk.Frame):
                 if (i != self.grid_size-1):
                     hline = self.board.create_line(dot_left, (dot_size + dot_top), (dot_left + dot_spacing), (dot_top + dot_size), fill = '#E4E4E4', width = self.LINE_WIDTH)
                     def handler(event, self=self, id = hline):
-                        return self.hlineClick(event, id)
+                        return self.lineClick(event, 2,id)
                     self.board.tag_bind(hline, '<ButtonPress-1>', handler)
 
                     # Add the boxes that are adjacent to the line to our 'lines' dictionary.
@@ -184,7 +184,7 @@ class Application(tk.Frame):
                 if (j != self.grid_size-1):
                     line = self.board.create_line((dot_left + dot_size), dot_top, (dot_left + dot_size), (dot_top + dot_spacing), fill = '#E4E4E4', width = self.LINE_WIDTH)
                     def handler(event, self=self, id = line):
-                        return self.lineClick(event, id)
+                        return self.lineClick(event, 1, id)
                     self.board.tag_bind(line, '<ButtonPress-1>', handler)
 
                     if i == 0:
@@ -204,7 +204,8 @@ class Application(tk.Frame):
                 dot = self.board.create_oval(dot_left, dot_top, dot_right, dot_bottom, fill = 'black')
 
 
-    def hlineClick(self, event, lineID=0):
+    # Combine with method above
+    def lineClick(self, event, l_weight, lineID=0):
         selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
 
         # Add the boxes that are adjacent to the line to our 'lines' dictionary.
@@ -215,41 +216,20 @@ class Application(tk.Frame):
 
         # If the line clicked only has one adjacent box...
         if not isinstance(adjacent_boxes, tuple):
-            if adjacent_boxes[1] == 0:
-                self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += 8
-            else:
-                self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += 2
-        # If it has two adjacent boxes...
-        else:
-            self.boxes[adjacent_boxes[0][0]][adjacent_boxes[0][1]] += 2
-            self.boxes[adjacent_boxes[1][0]][adjacent_boxes[1][1]] += 8
-
-        if self.is_player1_turn:
-            self.refresh_display("It is %s's turn!" %(self.player1name))
-        else:
-            self.refresh_display("It is %s's turn!" %(self.player2name))
-
-    # Combine with method above
-    def lineClick(self, event, lineID=0):
-        selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
-
-        adjacent_boxes = self.lines[lineID]
-
-        # If the line clicked only has one adjacent box...
-        if not isinstance(adjacent_boxes, tuple):
             if adjacent_boxes[0] == 0:
-                self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += 4
+                self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += 4 * l_weight
             else:
-                self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += 1
+                self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += l_weight
         # If it has two adjacent boxes...
         else:
-            self.boxes[adjacent_boxes[0][0]][adjacent_boxes[0][1]] += 1
-            self.boxes[adjacent_boxes[1][0]][adjacent_boxes[1][1]] += 4
+            self.boxes[adjacent_boxes[0][0]][adjacent_boxes[0][1]] += l_weight
+            self.boxes[adjacent_boxes[1][0]][adjacent_boxes[1][1]] += 4 * l_weight
 
-        if self.is_player1_turn:
+        if self.player1.turn:
             self.refresh_display("It is %s's turn!" %(self.player1.name))
         else:
             self.refresh_display("It is %s's turn!" %(self.player2.name))
+
 
     def refresh_display(self, error):
         self.board.itemconfig(self.display_message, text=error)
@@ -261,16 +241,16 @@ class Application(tk.Frame):
                 if self.boxes[i][j] == 15:
                     # We've completed a box! Find which one and fill it in.
                     rect_id = self.board.find_closest(((i+1)*(self.WIDTH / self.grid_size)), ((j+1)*(self.HEIGHT / self.grid_size)))
-                    if not self.is_player1_turn:
+                    if not self.player1.turn:
                         color = 'red'
-                        self.player1score += 1
-                        self.board.itemconfig(self.score1, text="%s:  %d" %(self.player1name, self.player1score))
-                        self.board.itemconfig(self.display_message, text=self.player1name+" got a box! Take another turn.")
+                        self.player1.score += 1
+                        self.board.itemconfig(self.score1, text="%s:  %d" %(self.player1.name, self.player1.score))
+                        self.board.itemconfig(self.display_message, text=self.player1.name+" got a box! Take another turn.")
                     else:
                         color = 'blue'
-                        self.player2score += 1
-                        self.board.itemconfig(self.score2, text="%s:  %d" %(self.player2name, self.player2score))
-                        self.board.itemconfig(self.display_message, text=self.player2name+" got a box! Take another turn.")
+                        self.player2.score += 1
+                        self.board.itemconfig(self.score2, text="%s:  %d" %(self.player2.name, self.player2.score))
+                        self.board.itemconfig(self.display_message, text=self.player2.name+" got a box! Take another turn.")
                     self.board.itemconfig(rect_id, fill=color)
                     # Change the box's value so that it doesn't come up again, and subtract a box from the total.
                     self.boxes[i][j] = 0
@@ -281,13 +261,13 @@ class Application(tk.Frame):
 
         # Switch turns
         if claimed_box == False:
-            self.is_player1_turn = not self.is_player1_turn
+            self.player1.turn = not self.player1.turn
 
         # Check for game over
         if self.boxes_left == 0:
-            if self.player1score < self.player2score:
+            if self.player1.score < self.player2.score:
                 winning_message = self.player2name + " Wins!"
-            elif self.player1score > self.player2score:
+            elif self.player1.score > self.player2.score:
                 winning_message = self.player1name + " Wins!"
             else:
                 winning_message = "It's a tie!"
