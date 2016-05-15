@@ -7,5 +7,4 @@ class Player():
         self.score = 0
         self.type = robot
         self.score_display = None
-        self.turn = False
-        self.color = "j"
+        self.color = None

@@ -36,6 +36,7 @@ class Application(tk.Frame):
         self.bgColor2 = "#BAFCAE"
         self.titlefont = tkFont.Font(family='BlairMdITC TT', size=64, weight='bold')
         self.buttonfont = tkFont.Font(family='Avalon', size=30)
+        self.messagefont = tkFont.Font(family='Helvetica', size=16, weight='bold')
 
         # Initialize game variables
         self.grid_size = grid_size + 1
@@ -46,63 +47,64 @@ class Application(tk.Frame):
 
     def show_title_screen(self):
         # Title and background
-        self.title_screen = tk.Canvas(self, width = self.WIDTH,
-                                            height = self.HEIGHT,
-                                            background = self.bgColor1)
-        self.title = tk.Label(self, text = "PIG PEN",
-                                    font = self.titlefont,
-                                    pady = 10,
-                                    bg = self.bgColor1)
+        self.title_screen = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT, background = self.bgColor1)
+        self.quitButton = tk.Button(self, text = 'Quit', bg = self.bgColor1, command = self.quit)
+        title = tk.Label(self,  text = "PIG PEN", font = self.titlefont, pady = 10, bg = self.bgColor1)
 
+        # Title image
         img = tk.PhotoImage(file = 'pig.gif')
-        self.pig = tk.Label(self, image = img, borderwidth = 0)
-        self.pig.img = img
+        pig = tk.Label(self, image = img, borderwidth = 0)
+        pig.img = img
+
+        def button_handler(gamemode):
+            modeButton1.destroy()
+            modeButton2.destroy()
+            title.destroy()
+            pig.destroy()
+            self.get_player_name(gamemode)
 
         # Custom buttons
-        self.modeButton1 = tk.Label(self,   text = "vs. player",
-                                            font = self.buttonfont,
-                                            bg = self.bgColor2,
-                                            padx = 10,
-                                            pady = 10,
-                                            relief = GROOVE)
-        self.modeButton2 = tk.Label(self,   text = "vs. computer",
-                                            font = self.buttonfont,
-                                            bg = self.bgColor2,
-                                            padx = 10,
-                                            pady = 10,
-                                            relief = RIDGE)
-        self.modeButton1.bind('<Button-1>', self.set_up_player_mode)
-        self.modeButton2.bind('<Button-1>', self.set_up_player_mode)
-
-        self.quitButton = tk.Button(self, text = 'Quit', bg = self.bgColor1, command = self.quit)
+        modeButton1 = tk.Label(self,    text = "vs. player",
+                                        font = self.buttonfont,
+                                        bg = self.bgColor2,
+                                        padx = 10,
+                                        pady = 10,
+                                        relief = RIDGE)
+        modeButton2 = tk.Label(self,    text = "vs. computer",
+                                        font = self.buttonfont,
+                                        bg = self.bgColor2,
+                                        padx = 10,
+                                        pady = 10,
+                                        relief = RIDGE)
+        modeButton1.bind('<Button-1>', lambda event: button_handler("PVP"))
+        modeButton2.bind('<Button-1>', lambda event: button_handler("PVC"))
 
         # Draw the screen
         self.title_screen.grid(rowspan=5)
-        self.title.grid(column=0, row=0)
-        self.pig.grid(row=1)
-        self.modeButton1.grid(row=2)
-        self.modeButton2.grid(row=3)
+        title.grid(column=0, row=0)
+        pig.grid(row=1)
+        modeButton1.grid(row=2)
+        modeButton2.grid(row=3)
         self.quitButton.grid(row = 4)
 
-    def set_up_player_mode(self, event):
-        self.modeButton1.destroy()
-        self.modeButton2.destroy()
-        self.title.destroy()
-        self.pig.destroy()
-        self.get_player_name()
 
-    def get_player_name(self):
+    def get_player_name(self, gamemode):
         # Entry boxes for users to enter names
-        l = tk.Label(self, text = "Player 1 Name: ")
-        l2 = tk.Label(self, text = "Player 2 Name: ")
+        l = tk.Label(self, text = "Player 1 Name: ", font = self.buttonfont, bg = self.bgColor2)
+        l2 = tk.Label(self, text = "Player 2 Name: ", font = self.buttonfont, bg = self.bgColor2)
         entry_box = tk.Entry(self)
         entry_box2 = tk.Entry(self)
+        back_button = tk.Label(self,    text = "Back",
+                                        font = self.messagefont,
+                                        bg = self.bgColor1,
+                                        relief = GROOVE)
 
         # Display entry boxes
-        l.grid(row = 0)
-        l2.grid(row = 2)
-        entry_box.grid(row = 1)
-        entry_box2.grid(row = 3)
+        l.grid(row = 1, sticky = NW, padx = 10)
+        l2.grid(row = 2, sticky = NW, padx = 10)
+        entry_box.grid(row = 1, sticky = NE, padx = 20)
+        entry_box2.grid(row = 2, sticky = NE, padx = 20)
+        back_button.grid(row = 0, sticky = NW, padx = 20, ipadx = 5, pady = 20, ipady = 5)
 
         # Needs to be defined after variable declaration.
         def entry_handler(event = 0):
@@ -111,12 +113,25 @@ class Application(tk.Frame):
             l2.destroy()
             entry_box.destroy()
             entry_box2.destroy()
+            back_button.destroy()
+            self.title_screen.destroy()
+
+
+        def back_button_handler(event = 0):
+            l.destroy()
+            l2.destroy()
+            entry_box.destroy()
+            entry_box2.destroy()
+            back_button.destroy()
+            self.title_screen.destroy()
+            self.quitButton.destroy()
+            self.show_title_screen()
 
         # New screen - Update how the display looks
         self.quitButton.configure(text = 'Done', command = entry_handler)
-        self.quitButton.bind('<Return>', entry_handler)
         self.title_screen.configure(bg = self.bgColor2)
-
+        entry_box2.bind('<Return>', entry_handler)
+        back_button.bind('<Button-1>', back_button_handler)
 
     def set_up_game(self, player1name, player2name):
         self.player1 = Player(player1name, "HUMAN")
@@ -125,12 +140,11 @@ class Application(tk.Frame):
         self.player2.color = "blue"
         self.current_turn = self.player1
         self.quitButton.configure(text = 'Quit', command = self.quit)
-        self.title_screen.destroy()
-        self.init_display()
+        self.init_game_display()
         self.fill_board()
 
 
-    def init_display(self):
+    def init_game_display(self):
         font = tkFont.Font(family='Helvetica', size=16, weight='bold')
         # Set up the canvas
         self.board = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT)
@@ -140,8 +154,8 @@ class Application(tk.Frame):
                                                         font = font)
         self.player1.score_display = self.board.create_text(100, 25, text = "%s: 0" %(self.player1.name), font = font)
         self.player2.score_display = self.board.create_text(self.WIDTH - 100, 25, text = "%s: 0" %(self.player2.name), font = font)
-        self.board.grid(row = 1)
-        self.quitButton.grid(row = 2)
+        self.board.grid(row = 0)
+        self.quitButton.grid(row = 1, pady = 20)
 
 
     # Popluates the board with dots and lines
@@ -203,11 +217,7 @@ class Application(tk.Frame):
 
     def lineClick(self, event, line_type, lineID=0):
         selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
-
-        if line_type == "HORIZONTAL":
-            l_weight = 2
-        else:
-            l_weight = 1
+        l_weight = 1 if line_type == "VERTICAL" else 2
 
         # Add the boxes that are adjacent to the line to our 'lines' dictionary.
         # The boxes are represented by a triple: the first two are the coords,
