@@ -8,3 +8,4 @@ class Player():
         self.type = robot
         self.score_display = None
         self.turn = False
+        self.color = "j"

@@ -29,7 +29,7 @@ class Application(tk.Frame):
 
         # Initialize board data structures
         self.lines = dict()
-        self.boxes = [[] for i in range(grid_size-1)]
+        self.boxes = [[] for i in range(grid_size)]
 
         # Display variables
         self.bgColor1 = "#AEE1FC"
@@ -38,8 +38,8 @@ class Application(tk.Frame):
         self.buttonfont = tkFont.Font(family='Avalon', size=30)
 
         # Initialize game variables
-        self.grid_size = grid_size
-        self.boxes_left = (grid_size-1)**2
+        self.grid_size = grid_size + 1
+        self.boxes_left = (grid_size)**2
 
         # Start the game
         self.show_title_screen()
@@ -73,7 +73,6 @@ class Application(tk.Frame):
                                             relief = RIDGE)
         self.modeButton1.bind('<Button-1>', self.set_up_player_mode)
         self.modeButton2.bind('<Button-1>', self.set_up_player_mode)
-
 
         self.quitButton = tk.Button(self, text = 'Quit', bg = self.bgColor1, command = self.quit)
 
@@ -122,7 +121,10 @@ class Application(tk.Frame):
     def set_up_game(self, player1name, player2name):
         self.player1 = Player(player1name, "HUMAN")
         self.player2 = Player(player2name, "HUMAN")
-        self.quitButton.configure(text='Quit', command=self.quit)
+        self.player1.color = "red"
+        self.player2.color = "blue"
+        self.current_turn = self.player1
+        self.quitButton.configure(text = 'Quit', command = self.quit)
         self.title_screen.destroy()
         self.init_display()
         self.fill_board()
@@ -133,17 +135,13 @@ class Application(tk.Frame):
         # Set up the canvas
         self.board = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT)
         self.board.grid()
-
         self.display_message = self.board.create_text(  self.WIDTH / 2,
                                                         self.HEIGHT - 25,
                                                         text = "It is " + self.player1.name + "'s turn!",
                                                         font = font)
-        self.score1 = self.board.create_text(100, 25,
-                                            text = "%s: 0" %(self.player1.name),
-                                            font = font)
-        self.score2 = self.board.create_text(self.WIDTH - 100, 25,
-                                                    text = "%s: 0" %(self.player2.name),
-                                                    font = font)
+        self.player1.score_display = self.board.create_text(100, 25, text = "%s: 0" %(self.player1.name), font = font)
+        self.player2.score_display = self.board.create_text(self.WIDTH - 100, 25, text = "%s: 0" %(self.player2.name), font = font)
+        self.quitButton.grid()
 
 
     # Popluates the board with dots and lines
@@ -158,7 +156,6 @@ class Application(tk.Frame):
 
         for i in range(0, self.grid_size):
             for j in range(0, self.grid_size):
-
                 # Dot variables
                 dot_left = (dot_spacing*i) - dot_size + margin
                 dot_top = (dot_spacing*j) - dot_size + margin
@@ -204,7 +201,6 @@ class Application(tk.Frame):
                 dot = self.board.create_oval(dot_left, dot_top, dot_right, dot_bottom, fill = 'black')
 
 
-    # Combine with method above
     def lineClick(self, event, line_type, lineID=0):
         selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
 
@@ -230,10 +226,7 @@ class Application(tk.Frame):
             self.boxes[adjacent_boxes[0][0]][adjacent_boxes[0][1]] += l_weight
             self.boxes[adjacent_boxes[1][0]][adjacent_boxes[1][1]] += 4 * l_weight
 
-        if self.player1.turn:
-            self.refresh_display("It is %s's turn!" %(self.player1.name))
-        else:
-            self.refresh_display("It is %s's turn!" %(self.player2.name))
+        self.refresh_display("It is %s's turn!" %(self.current_turn.name))
 
 
     def refresh_display(self, error):
@@ -247,50 +240,48 @@ class Application(tk.Frame):
                 if self.boxes[i][j] == 15:
                     # We've completed a box! Find which one and fill it in.
                     rect_id = self.board.find_closest(((i+1)*(self.WIDTH / self.grid_size)), ((j+1)*(self.HEIGHT / self.grid_size)))
-                    if not self.player1.turn:
-                        color = 'red'
-                        self.player1.score += 1
-                        self.board.itemconfig(self.score1, text="%s:  %d" %(self.player1.name, self.player1.score))
-                        self.board.itemconfig(self.display_message, text=self.player1.name+" got a box! Take another turn.")
-                    else:
-                        color = 'blue'
-                        self.player2.score += 1
-                        self.board.itemconfig(self.score2, text="%s:  %d" %(self.player2.name, self.player2.score))
-                        self.board.itemconfig(self.display_message, text=self.player2.name+" got a box! Take another turn.")
-                    self.board.itemconfig(rect_id, fill=color)
+                    plyr = self.current_turn
+                    plyr.score += 1
+                    self.board.itemconfig(self.display_message, text = plyr.name + " got a box! Take another turn.")
+                    self.board.itemconfig(plyr.score_display, text="%s:  %d" %(plyr.name, plyr.score))
+                    self.board.itemconfig(rect_id, fill = plyr.color)
                     # Change the box's value so that it doesn't come up again, and subtract a box from the total.
                     self.boxes[i][j] = 0
                     self.boxes_left -= 1
                     # The player gets another turn.
                     claimed_box = True
 
-
         # Switch turns
         if claimed_box == False:
+            if self.player1.turn:
+                self.current_turn = self.player2
+            else:
+                self.current_turn = self.player1
             self.player1.turn = not self.player1.turn
 
-        # Check for game over
         if self.boxes_left == 0:
-            if self.player1.score < self.player2.score:
-                winning_message = self.player2.name + " Wins!"
-            elif self.player1.score > self.player2.score:
-                winning_message = self.player1.name + " Wins!"
-            else:
-                winning_message = "It's a tie!"
-            font = tkFont.Font(family='Helvetica', size=48, weight='bold')
-            #self.board.create_rectangle(0,0,self.WIDTH, self.HEIGHT, fill='black')
-            self.board.create_text(self.WIDTH / 2, self.HEIGHT / 2, text=winning_message, font = font, fill='white', activefill='magenta')
+            self.game_over()
+
+
+    def game_over(self):
+        if self.player1.score < self.player2.score:
+            winning_message = self.player2.name + " Wins!"
+        elif self.player1.score > self.player2.score:
+            winning_message = self.player1.name + " Wins!"
+        else:
+            winning_message = "It's a tie!"
+        font = tkFont.Font(family='Helvetica', size=48, weight='bold')
+        #self.board.create_rectangle(0,0,self.WIDTH, self.HEIGHT, fill='black')
+        self.board.create_text(self.WIDTH / 2, self.HEIGHT / 2, text=winning_message, font = font, fill='white', activefill='magenta')
 
 
 def main():
-
     # Argument for board size
     if sys.argv[1:]:
-        if 1 < sys.argv[1] or sys.argv[1] > 21:
+        n = string.atoi(sys.argv[1])
+        if 2 > n or n > 20:
             print "Value must be between 2 and 20. Playing with default 5x5 grid."
             n = 5
-        else:
-            n = string.atoi(sys.argv[1])
     else:
         n = 5
 
