@@ -134,14 +134,14 @@ class Application(tk.Frame):
         font = tkFont.Font(family='Helvetica', size=16, weight='bold')
         # Set up the canvas
         self.board = tk.Canvas(self, width = self.WIDTH, height = self.HEIGHT)
-        self.board.grid()
         self.display_message = self.board.create_text(  self.WIDTH / 2,
                                                         self.HEIGHT - 25,
-                                                        text = "It is " + self.player1.name + "'s turn!",
+                                                        text = "It is " + self.current_turn.name + "'s turn!",
                                                         font = font)
         self.player1.score_display = self.board.create_text(100, 25, text = "%s: 0" %(self.player1.name), font = font)
         self.player2.score_display = self.board.create_text(self.WIDTH - 100, 25, text = "%s: 0" %(self.player2.name), font = font)
-        self.quitButton.grid()
+        self.board.grid(row = 1)
+        self.quitButton.grid(row = 2)
 
 
     # Popluates the board with dots and lines
@@ -226,11 +226,10 @@ class Application(tk.Frame):
             self.boxes[adjacent_boxes[0][0]][adjacent_boxes[0][1]] += l_weight
             self.boxes[adjacent_boxes[1][0]][adjacent_boxes[1][1]] += 4 * l_weight
 
-        self.refresh_display("It is %s's turn!" %(self.current_turn.name))
+        self.refresh_display()
 
 
-    def refresh_display(self, error):
-        self.board.itemconfig(self.display_message, text=error)
+    def refresh_display(self):
         claimed_box = False
 
         # Test for completed boxes
@@ -253,11 +252,11 @@ class Application(tk.Frame):
 
         # Switch turns
         if claimed_box == False:
-            if self.player1.turn:
+            if self.current_turn == self.player1:
                 self.current_turn = self.player2
             else:
                 self.current_turn = self.player1
-            self.player1.turn = not self.player1.turn
+            self.board.itemconfig(self.display_message, text="It is %s's turn!" %(self.current_turn.name))
 
         if self.boxes_left == 0:
             self.game_over()
