@@ -168,8 +168,8 @@ class Application(tk.Frame):
                 # Create horizontal lines
                 if (i != self.grid_size-1):
                     hline = self.board.create_line(dot_left, (dot_size + dot_top), (dot_left + dot_spacing), (dot_top + dot_size), fill = '#E4E4E4', width = self.LINE_WIDTH)
-                    def handler(event, self=self, id = hline):
-                        return self.lineClick(event, 2,id)
+                    def handler(event, self = self, id = hline):
+                        return self.lineClick(event, "HORIZONTAL", id)
                     self.board.tag_bind(hline, '<ButtonPress-1>', handler)
 
                     # Add the boxes that are adjacent to the line to our 'lines' dictionary.
@@ -183,8 +183,8 @@ class Application(tk.Frame):
                 # Create vertical lines
                 if (j != self.grid_size-1):
                     line = self.board.create_line((dot_left + dot_size), dot_top, (dot_left + dot_size), (dot_top + dot_spacing), fill = '#E4E4E4', width = self.LINE_WIDTH)
-                    def handler(event, self=self, id = line):
-                        return self.lineClick(event, 1, id)
+                    def handler(event, self = self, id = line):
+                        return self.lineClick(event, "VERTICAL", id)
                     self.board.tag_bind(line, '<ButtonPress-1>', handler)
 
                     if i == 0:
@@ -205,18 +205,23 @@ class Application(tk.Frame):
 
 
     # Combine with method above
-    def lineClick(self, event, l_weight, lineID=0):
+    def lineClick(self, event, line_type, lineID=0):
         selected_line = self.board.itemconfigure(lineID, fill = '#696969', state = tk.DISABLED)
 
-        # Add the boxes that are adjacent to the line to our 'lines' dictionary.
-        # The boxes are represented by a triple: the first two are the coords, and the third is
-        # the state of the box. The state integer is 4 bits: 1=right, 2=bottom, 4=left, 8=top.
+        if line_type == "HORIZONTAL":
+            l_weight = 2
+        else:
+            l_weight = 1
 
+        # Add the boxes that are adjacent to the line to our 'lines' dictionary.
+        # The boxes are represented by a triple: the first two are the coords,
+        # and the third is the state of the box.
+        # The state integer is 4 bits: 1=right, 2=bottom, 4=left, 8=top.
         adjacent_boxes = self.lines[lineID]
 
         # If the line clicked only has one adjacent box...
         if not isinstance(adjacent_boxes, tuple):
-            if adjacent_boxes[0] == 0:
+            if adjacent_boxes[l_weight - 1] == 0:
                 self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += 4 * l_weight
             else:
                 self.boxes[adjacent_boxes[0]][adjacent_boxes[1]] += l_weight
@@ -238,6 +243,7 @@ class Application(tk.Frame):
         # Test for completed boxes
         for i in range(len(self.boxes)):
             for j in range(len(self.boxes)):
+                #print self.boxes[i][j]
                 if self.boxes[i][j] == 15:
                     # We've completed a box! Find which one and fill it in.
                     rect_id = self.board.find_closest(((i+1)*(self.WIDTH / self.grid_size)), ((j+1)*(self.HEIGHT / self.grid_size)))
@@ -266,9 +272,9 @@ class Application(tk.Frame):
         # Check for game over
         if self.boxes_left == 0:
             if self.player1.score < self.player2.score:
-                winning_message = self.player2name + " Wins!"
+                winning_message = self.player2.name + " Wins!"
             elif self.player1.score > self.player2.score:
-                winning_message = self.player1name + " Wins!"
+                winning_message = self.player1.name + " Wins!"
             else:
                 winning_message = "It's a tie!"
             font = tkFont.Font(family='Helvetica', size=48, weight='bold')
@@ -280,7 +286,11 @@ def main():
 
     # Argument for board size
     if sys.argv[1:]:
-        n = string.atoi(sys.argv[1])
+        if 1 < sys.argv[1] or sys.argv[1] > 21:
+            print "Value must be between 2 and 20. Playing with default 5x5 grid."
+            n = 5
+        else:
+            n = string.atoi(sys.argv[1])
     else:
         n = 5
 

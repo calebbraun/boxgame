@@ -44,7 +44,7 @@ def line_choice_to_int(choice):
 	elif choice == 'u':
 		return 8
 	else:
-		return 0	
+		return 0
 
 def AI_choice(board_array):
 	choice = "111"
@@ -119,4 +119,3 @@ def main():
 		refresh_display(board_array, initial, error)
 
 main()
-
